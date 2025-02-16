@@ -10,9 +10,9 @@ part 'music_cubit.freezed.dart';
 class MusicCubit extends Cubit<MusicState> {
   MusicCubit({required MusicRepository repository})
       : _repository = repository,
-        super(MusicState.initial()){
-          getRecomendationTrack();
-        }
+        super(MusicState.initial()) {
+    getRecomendationTrack();
+  }
   final MusicRepository _repository;
 
   Future<void> getRecomendationTrack() async {
@@ -26,26 +26,7 @@ class MusicCubit extends Cubit<MusicState> {
         emit(const MusicState.error(error: 'Ничего не найдено, сорри'));
       }
     } catch (e) {
-      
-      emit(MusicState.error(error: e.toString()));
-    }
-  }
-
-  Future<void> searchTracks(String query) async {
-    if (query.isEmpty) {
-      getRecomendationTrack();
-      return;
-    }
-
-    try {
-      emit(const MusicState.loading());
-      final tracks = await _repository.search(query);
-      if (tracks.isNotEmpty) {
-        emit(MusicState.loaded(tracks: tracks));
-      } else {
-        emit(const MusicState.error(error: 'Ничего не найдено, сорри'));
-      }
-    } catch (e) {
+      debugPrint(e.toString());
       emit(MusicState.error(error: e.toString()));
     }
   }

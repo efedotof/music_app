@@ -6,18 +6,17 @@ import 'package:music_app/features/music_home/cubit/playstop_music_cubit.dart';
 import 'package:music_app/music_model/tracks.dart';
 
 class TracksModel extends StatelessWidget {
-  const TracksModel({super.key, required this.tracks, required this.index});
+  const TracksModel({super.key, required this.tracks,});
 
-  final List<Tracks> tracks;
-  final int index;
+  final Tracks tracks;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      subtitle: Text(tracks[index].artistName),
+      subtitle: Text(tracks.artistName),
       leading: ClipOval(
         child: CachedNetworkImage(
-          imageUrl: "https://zaycev.net/${tracks[index].imageWebp}",
+          imageUrl: tracks.imageWebp,
           imageBuilder: (context, imageProvider) => Container(
             width: 50,
             height: 50,
@@ -32,11 +31,11 @@ class TracksModel extends StatelessWidget {
           errorWidget: (context, url, error) => const Icon(Icons.error),
         ),
       ),
-      title: Text(tracks[index].track),
+      title: Text(tracks.track),
       onTap: () {
         context
             .read<PlaystopMusicCubit>()
-            .playTrack(tracks[index], tracks[index].id);
+            .playTrack(tracks, tracks.id);
         context.read<PlaybackCubit>().play();
       },
     );

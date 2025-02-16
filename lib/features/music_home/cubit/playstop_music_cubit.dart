@@ -11,26 +11,39 @@ part 'playstop_music_cubit.freezed.dart';
 class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
   final MusicRepository _repository;
   final AudioPlayer audioPlayer;
-  Tracks? _currentTrack; 
-  bool _isPaused = false; 
-  List<Tracks> _playlist = []; 
-  int _currentTrackIndex = 0; 
+  final List<Tracks> _playlist; 
+  Tracks? _currentTrack;
+  bool _isPaused = false;
+  int _currentTrackIndex = 0;
+  bool _isLooping = false;
 
-  PlaystopMusicCubit({required MusicRepository repository})
-      : _repository = repository,
+  PlaystopMusicCubit({
+    required MusicRepository repository,
+    required List<Tracks>
+        playlist, 
+  })  : _repository = repository,
+        _playlist = playlist,
         audioPlayer = AudioPlayer(),
         super(const PlaystopMusicState.initial()) {
+
+    if (_playlist.isNotEmpty) {
+      _currentTrack = _playlist[0]; 
+    }
+
     audioPlayer.playerStateStream.listen((playerState) {
       if (playerState.playing && _currentTrack != null) {
         emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
       } else if (!playerState.playing && _currentTrack != null) {
-        _isPaused = true; 
+        _isPaused = true;
         emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
       }
 
-
       if (playerState.processingState == ProcessingState.completed) {
-        _playNextTrack();
+        if (_isLooping) {
+          playTrack(_currentTrack!, _currentTrack!.id);
+        } else {
+          playNextTrack();
+        }
       }
     });
   }
@@ -58,41 +71,50 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
                 await audioPlayer.stop();
               }
 
-  
               await audioPlayer.setUrl(trackUrl);
               await audioPlayer.play();
-              _isPaused = false; 
-              _currentTrack = track; 
-              emit(PlaystopMusicState.currentTrack(track: track)); 
+              _isPaused = false;
+              _currentTrack = track;
+              emit(PlaystopMusicState.currentTrack(track: track));
             } else {
-              emit(const PlaystopMusicState.error(error: 'Ошибка загрузки трека.'));
+              emit(const PlaystopMusicState.error(
+                  error: 'Ошибка загрузки трека.'));
             }
           } else {
             emit(const PlaystopMusicState.error(error: 'ID потока не найден.'));
           }
         } else {
-          emit(const PlaystopMusicState.error(error: 'Метаданные трека не найдены.'));
+          emit(const PlaystopMusicState.error(
+              error: 'Метаданные трека не найдены.'));
         }
       } else {
-        emit(const PlaystopMusicState.error(error: 'Ошибка загрузки метаданных трека.'));
+        emit(const PlaystopMusicState.error(
+            error: 'Ошибка загрузки метаданных трека.'));
       }
     } catch (e) {
       emit(PlaystopMusicState.error(error: e.toString()));
     }
   }
 
-
-  Future<void> _playNextTrack() async {
-    if (_playlist.isEmpty) return; 
-    _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length; 
-    final nextTrack = _playlist[_currentTrackIndex];
-    await playTrack(nextTrack, nextTrack.id); 
+  Future<void> playNextTrack() async {
+    if (_playlist.isEmpty || _currentTrack == null) return;
+    if (_isLooping) {
+      await playTrack(_currentTrack!, _currentTrack!.id);
+    } else {
+      _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
+      final nextTrack = _playlist[_currentTrackIndex];
+      _currentTrack = nextTrack; 
+      await playTrack(nextTrack, nextTrack.id);
+    }
   }
 
-
-  void setPlaylist(List<Tracks> playlist) {
-    _playlist = playlist; 
-    _currentTrackIndex = 0; 
+  Future<void> playPreviousTrack() async {
+    if (_playlist.isEmpty || _currentTrack == null) return;
+    _currentTrackIndex =
+        (_currentTrackIndex - 1 + _playlist.length) % _playlist.length;
+    final previousTrack = _playlist[_currentTrackIndex];
+    _currentTrack = previousTrack; 
+    await playTrack(previousTrack, previousTrack.id);
   }
 
   Future<void> pauseTrack() async {
@@ -104,22 +126,28 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
   Future<void> stopTrack() async {
     await audioPlayer.stop();
     _currentTrack = null; 
-    _isPaused = false; 
-    emit(const PlaystopMusicState.initial()); 
+    _isPaused = false;
+    emit(const PlaystopMusicState
+        .initial()); 
   }
 
   Future<void> resumeTrack() async {
     if (_isPaused && _currentTrack != null) {
-      final currentPosition = audioPlayer.position; 
-      await audioPlayer.seek(currentPosition); 
+      final currentPosition = audioPlayer.position;
+      await audioPlayer.seek(currentPosition);
       await audioPlayer.play();
-      _isPaused = false; 
+      _isPaused = false;
       emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
     }
   }
 
   bool getStopOrPlay() {
     return audioPlayer.playing;
+  }
+
+  void toggleLoop() {
+    _isLooping = !_isLooping;
+    emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
   }
 
   @override

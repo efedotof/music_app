@@ -10,6 +10,25 @@
 part of 'app_route.dart';
 
 /// generated route for
+/// [DownloadTabScreen]
+class DownloadTabRoute extends PageRouteInfo<void> {
+  const DownloadTabRoute({List<PageRouteInfo>? children})
+      : super(
+          DownloadTabRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'DownloadTabRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const DownloadTabScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [FavoriteScreen]
 class FavoriteRoute extends PageRouteInfo<void> {
   const FavoriteRoute({List<PageRouteInfo>? children})
@@ -24,6 +43,25 @@ class FavoriteRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return const FavoriteScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [FavoriteTabScreen]
+class FavoriteTabRoute extends PageRouteInfo<void> {
+  const FavoriteTabRoute({List<PageRouteInfo>? children})
+      : super(
+          FavoriteTabRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'FavoriteTabRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const FavoriteTabScreen();
     },
   );
 }
@@ -64,6 +102,52 @@ class MusicHomeRoute extends PageRouteInfo<void> {
       return const MusicHomeScreen();
     },
   );
+}
+
+/// generated route for
+/// [PlaylistScreen]
+class PlaylistRoute extends PageRouteInfo<PlaylistRouteArgs> {
+  PlaylistRoute({
+    Key? key,
+    required Playlist playlist,
+    List<PageRouteInfo>? children,
+  }) : super(
+          PlaylistRoute.name,
+          args: PlaylistRouteArgs(
+            key: key,
+            playlist: playlist,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'PlaylistRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<PlaylistRouteArgs>();
+      return PlaylistScreen(
+        key: args.key,
+        playlist: args.playlist,
+      );
+    },
+  );
+}
+
+class PlaylistRouteArgs {
+  const PlaylistRouteArgs({
+    this.key,
+    required this.playlist,
+  });
+
+  final Key? key;
+
+  final Playlist playlist;
+
+  @override
+  String toString() {
+    return 'PlaylistRouteArgs{key: $key, playlist: $playlist}';
+  }
 }
 
 /// generated route for

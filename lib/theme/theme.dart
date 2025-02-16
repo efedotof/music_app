@@ -15,7 +15,7 @@ final dartTheme = ThemeData(
   appBarTheme: AppBarTheme(
     color: Color(0xFF1F2127),
     elevation: 0,
-  )
+  ),
 );
 
 final lightTheme = ThemeData(

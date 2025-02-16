@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:music_app/features/music_home/cubit/music_cubit.dart';
-
-
-
+import 'package:music_app/features/search/cubit/search_cubit.dart';
 
 class SearchField extends StatelessWidget {
   const SearchField({super.key});
@@ -24,8 +21,7 @@ class SearchField extends StatelessWidget {
         child: TextField(
           controller: controller,
           onSubmitted: (value) {
-            // Call the search method in MusicCubit when the user submits the query
-            context.read<MusicCubit>().searchTracks(value);
+            context.read<SearchCubit>().searchTracks(value);
           },
           decoration: InputDecoration(
             hintText: 'Search',

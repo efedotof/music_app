@@ -1,3 +1,4 @@
+import 'package:music_app/music_model/playlist.dart';
 import 'package:music_app/music_model/tracks.dart';
 
 abstract interface class MusicInterface {
@@ -6,4 +7,7 @@ abstract interface class MusicInterface {
   Future<String> getToken();
   Future<Map<String, dynamic>> fetchTracksFilezMeta(List<String> trackIds);
   Future<String?> getTrackUrl(String trackId);
+  Future<List<String>> fetchPlaylistNames({int page = 1, int limit = 20});
+  Future<List<Playlist>> fetchPlaylistsInfo(List<String> playlistUrls);
+  Future<List<Tracks>> getTracksByUrl(String url);
 }
