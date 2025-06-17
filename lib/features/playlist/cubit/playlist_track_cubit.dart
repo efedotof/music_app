@@ -24,4 +24,17 @@ class PlaylistTrackCubit extends Cubit<PlaylistTrackState> {
     }
   }
 
+  Future<List<Tracks>> getTracksToList({required String url}) async{
+    try {
+      final tracks = await _repository.getTracksByUrl(url);
+      if(tracks.isNotEmpty){
+        return tracks;
+      }else{
+        return [];
+      }
+    } catch (e) {
+      return [];
+    }
+  }
+
 }

@@ -1,6 +1,9 @@
-import 'package:bloc/bloc.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:music_app/Hive/repository/track_favorite_interface.dart';
+import 'package:music_app/features/music_home/cubit/favorite_button_cubit.dart';
+import 'package:music_app/music_model/tracks.dart';
 
 import '../model/track_favorite/track_favorite.dart';
 
@@ -14,9 +17,33 @@ class TrackFavoriteCubit extends Cubit<TrackFavoriteState> {
 
   final TrackFavoriteInterface _trackFavoriteRepository;
 
-  Future<void> addTrack(TrackFavoriteBox track) async {
+  Future<void> addTrack(
+      {required BuildContext context, required Tracks track}) async {
     try {
-      await _trackFavoriteRepository.addTrack(track);
+      List<String> trackID =
+          await context.read<FavoriteButtonCubit>().getFavorite();
+
+      if (trackID.contains(track.id)) {
+        _trackFavoriteRepository.deleteTrack(track.id);
+      } else {
+        await _trackFavoriteRepository.addTrack(TrackFavoriteBox(
+            id: track.id,
+            size: track.size,
+            track: track.track,
+            bitrate: track.bitrate,
+            duration: track.duration,
+            artistName: track.artistName,
+            playbackEnabled: track.playbackEnabled,
+            downloadEnabled: track.downloadEnabled,
+            imageJpg: track.imageJpg,
+            imageWebp: track.imageWebp,
+            explicit: track.explicit,
+            artistId: track.artistId,
+            isArtistForeignAgent: track.isArtistForeignAgent));
+      }
+      if (context.mounted) {
+        context.read<FavoriteButtonCubit>().setFavorite(track: track);
+      }
       emit(TrackFavoriteState.success());
     } catch (e) {
       emit(TrackFavoriteState.failure(e.toString()));

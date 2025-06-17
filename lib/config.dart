@@ -6,3 +6,4 @@ const String playTkack =  'https://zaycev.net/api/external/track/play/';
 const String addressZaicev = 'https://zaycev.net/';
 const String playlistAPI = 'https://zaycev.net/api/external/pages/musicset';
 const String fetchPlayListTrack = 'https://zaycev.net/api/external/pages/musicset/tracks?url=';
+const String downloadTrackAddress = 'https://zaycev.net/api/external/track/download/';

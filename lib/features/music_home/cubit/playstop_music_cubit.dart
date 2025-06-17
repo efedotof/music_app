@@ -1,5 +1,4 @@
 import 'package:bloc/bloc.dart';
-import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_app/music_model/tracks.dart';
@@ -10,149 +9,116 @@ part 'playstop_music_cubit.freezed.dart';
 
 class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
   final MusicRepository _repository;
-  final AudioPlayer audioPlayer;
-  final List<Tracks> _playlist; 
-  Tracks? _currentTrack;
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPaused = false;
-  int _currentTrackIndex = 0;
   bool _isLooping = false;
+  int _currentTrackIndex = 0;
+  List<Tracks> _playlist = [];
+  Duration _lastPosition = Duration.zero;
+
+  AudioPlayer get audioPlayer => _audioPlayer;
 
   PlaystopMusicCubit({
     required MusicRepository repository,
-    required List<Tracks>
-        playlist, 
   })  : _repository = repository,
-        _playlist = playlist,
-        audioPlayer = AudioPlayer(),
         super(const PlaystopMusicState.initial()) {
-
-    if (_playlist.isNotEmpty) {
-      _currentTrack = _playlist[0]; 
-    }
-
-    audioPlayer.playerStateStream.listen((playerState) {
-      if (playerState.playing && _currentTrack != null) {
-        emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
-      } else if (!playerState.playing && _currentTrack != null) {
-        _isPaused = true;
-        emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
-      }
-
-      if (playerState.processingState == ProcessingState.completed) {
-        if (_isLooping) {
-          playTrack(_currentTrack!, _currentTrack!.id);
-        } else {
-          playNextTrack();
-        }
+    _audioPlayer.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        playNextTrack();
       }
     });
   }
 
-  Future<void> playTrack(Tracks track, String trackId) async {
+  Future<void> playTrack(List<Tracks> playlist, Tracks track) async {
     try {
-      final tracksMeta = await _repository.fetchTracksFilezMeta([trackId]);
+      _playlist = playlist;
+      _currentTrackIndex = playlist.indexOf(track);
 
-      if (tracksMeta['tracks'] != null && tracksMeta['tracks'].isNotEmpty) {
-        final trackMeta = tracksMeta['tracks'].firstWhere(
-          (track) => track['id'].toString() == trackId,
-          orElse: () => null,
-        );
+      final trackMeta = await _fetchTrackMeta(track.id);
 
-        if (trackMeta != null) {
-          final streamingId = trackMeta['streaming'];
+      if (trackMeta != null) {
+        final trackUrl = await _repository.getTrackUrl(trackMeta['streaming']);
 
-          if (streamingId != null) {
-            final trackUrl = await _repository.getTrackUrl(streamingId);
+        if (trackUrl != null) {
+          if (_audioPlayer.playing) await _audioPlayer.stop();
 
-            debugPrint('Track URL: $trackUrl');
+          await _audioPlayer.setUrl(trackUrl);
 
-            if (trackUrl != null) {
-              if (audioPlayer.playing) {
-                await audioPlayer.stop();
-              }
-
-              await audioPlayer.setUrl(trackUrl);
-              await audioPlayer.play();
-              _isPaused = false;
-              _currentTrack = track;
-              emit(PlaystopMusicState.currentTrack(track: track));
-            } else {
-              emit(const PlaystopMusicState.error(
-                  error: 'Ошибка загрузки трека.'));
-            }
-          } else {
-            emit(const PlaystopMusicState.error(error: 'ID потока не найден.'));
+          if (_isPaused && _lastPosition != Duration.zero) {
+            await _audioPlayer.seek(_lastPosition);
           }
+
+          await _audioPlayer.play();
+
+          emit(PlaystopMusicState.currentTrack(
+              trackList: playlist, track: track));
+          _isPaused = false;
         } else {
-          emit(const PlaystopMusicState.error(
-              error: 'Метаданные трека не найдены.'));
+          emit(const PlaystopMusicState.error(error: 'Ошибка загрузки трека.'));
         }
       } else {
         emit(const PlaystopMusicState.error(
-            error: 'Ошибка загрузки метаданных трека.'));
+            error: 'Метаданные трека не найдены.'));
       }
     } catch (e) {
       emit(PlaystopMusicState.error(error: e.toString()));
     }
   }
 
+  Future<Map<String, dynamic>?> _fetchTrackMeta(String trackId) async {
+    final tracksMeta = await _repository.fetchTracksFilezMeta([trackId]);
+    return tracksMeta['tracks']?.firstWhere(
+      (track) => track['id'].toString() == trackId,
+      orElse: () => null,
+    );
+  }
+
   Future<void> playNextTrack() async {
-    if (_playlist.isEmpty || _currentTrack == null) return;
-    if (_isLooping) {
-      await playTrack(_currentTrack!, _currentTrack!.id);
-    } else {
-      _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
-      final nextTrack = _playlist[_currentTrackIndex];
-      _currentTrack = nextTrack; 
-      await playTrack(nextTrack, nextTrack.id);
-    }
+    if (_playlist.isEmpty) return;
+    _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
+    await playTrack(_playlist, _playlist[_currentTrackIndex]);
   }
 
   Future<void> playPreviousTrack() async {
-    if (_playlist.isEmpty || _currentTrack == null) return;
+    if (_playlist.isEmpty) return;
     _currentTrackIndex =
         (_currentTrackIndex - 1 + _playlist.length) % _playlist.length;
-    final previousTrack = _playlist[_currentTrackIndex];
-    _currentTrack = previousTrack; 
-    await playTrack(previousTrack, previousTrack.id);
+    await playTrack(_playlist, _playlist[_currentTrackIndex]);
   }
 
   Future<void> pauseTrack() async {
-    await audioPlayer.pause();
+    _lastPosition = _audioPlayer.position;
+    await _audioPlayer.pause();
     _isPaused = true;
-    emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
+    emit(PlaystopMusicState.currentTrack(
+        trackList: _playlist, track: _playlist[_currentTrackIndex]));
   }
 
   Future<void> stopTrack() async {
-    await audioPlayer.stop();
-    _currentTrack = null; 
-    _isPaused = false;
-    emit(const PlaystopMusicState
-        .initial()); 
+    _lastPosition = Duration.zero; // Сброс позиции
+    await _audioPlayer.stop();
+    emit(const PlaystopMusicState.initial());
   }
 
   Future<void> resumeTrack() async {
-    if (_isPaused && _currentTrack != null) {
-      final currentPosition = audioPlayer.position;
-      await audioPlayer.seek(currentPosition);
-      await audioPlayer.play();
+    if (_isPaused) {
+      await _audioPlayer.seek(_lastPosition); // ← восстановление позиции
+      await _audioPlayer.play();
       _isPaused = false;
-      emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
+      emit(PlaystopMusicState.currentTrack(
+          trackList: _playlist, track: _playlist[_currentTrackIndex]));
     }
-  }
-
-  bool getStopOrPlay() {
-    return audioPlayer.playing;
   }
 
   void toggleLoop() {
     _isLooping = !_isLooping;
-    emit(PlaystopMusicState.currentTrack(track: _currentTrack!));
+    emit(PlaystopMusicState.currentTrack(
+        trackList: _playlist, track: _playlist[_currentTrackIndex]));
   }
 
   @override
-  Future<void> close() {
-    audioPlayer.dispose();
+  Future<void> close() async {
+    await _audioPlayer.dispose();
     return super.close();
   }
 }

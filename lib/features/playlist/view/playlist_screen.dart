@@ -18,7 +18,6 @@ class PlaylistScreen extends StatelessWidget {
         title: Text(playlist.title),
         backgroundColor: Colors.transparent,
         actions: [
-          IconButton(onPressed: (){}, icon: Icon(Icons.play_arrow)),
         ],
       ),
       body: SingleChildScrollView(
@@ -35,8 +34,12 @@ class PlaylistScreen extends StatelessWidget {
                     child: Text(error),
                   ),
               tracklists: (tracks) => Wrap(
-                    children: List.generate(tracks.length,
-                        (index) => TracksModel(tracks: tracks[index])),
+                    children: List.generate(
+                        tracks.length,
+                        (index) => TracksModel(
+                              tracks: tracks[index],
+                              listTracks: tracks,
+                            )),
                   ));
         },
       )),

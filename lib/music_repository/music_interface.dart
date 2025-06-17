@@ -10,4 +10,9 @@ abstract interface class MusicInterface {
   Future<List<String>> fetchPlaylistNames({int page = 1, int limit = 20});
   Future<List<Playlist>> fetchPlaylistsInfo(List<String> playlistUrls);
   Future<List<Tracks>> getTracksByUrl(String url);
+  Future<void> downloadTrack({
+    required String downloadUrl,
+    required String fileName,
+    required void Function(double progress)? onProgress,
+  });
 }

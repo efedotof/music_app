@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:music_app/music_model/playlist.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'music_interface.dart';
 import 'package:dio/dio.dart';
@@ -234,6 +237,58 @@ class MusicRepository implements MusicInterface {
       }
     } catch (e) {
       throw Exception('Ошибка при выполнении запроса: $e');
+    }
+  }
+
+  @override
+  Future<void> downloadTrack({
+    required String downloadUrl,
+    required String fileName,
+    required void Function(double progress)? onProgress,
+  }) async {
+    try {
+      Directory dir;
+      if (Platform.isAndroid || Platform.isIOS) {
+        dir = await getApplicationDocumentsDirectory();
+      } else {
+        dir = await getDownloadsDirectory() ??
+            await getApplicationDocumentsDirectory();
+      }
+
+      // Добавляем .mp3, если его нет
+      final fileNameWithExtension =
+          fileName.endsWith('.mp3') ? fileName : '$fileName.mp3';
+      final filePath = '${dir.path}/$fileNameWithExtension';
+
+      debugPrint('📥 Скачивание в: $filePath');
+      debugPrint('🔗 URL: $downloadUrl');
+
+      final dio = Dio();
+      final response = await dio.download(
+        downloadUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final percent = received / total;
+            debugPrint("📊 Скачано: ${(percent * 100).toStringAsFixed(0)}%");
+            onProgress?.call(percent);
+          }
+        },
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          maxRedirects: 5,
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Трек успешно загружен: $filePath');
+      } else {
+        debugPrint('❌ Ошибка загрузки: код ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Ошибка при скачивании трека: $e');
     }
   }
 }

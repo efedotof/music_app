@@ -6,10 +6,14 @@ import 'package:music_app/features/music_home/cubit/playstop_music_cubit.dart';
 import 'package:music_app/music_model/tracks.dart';
 
 class TracksModel extends StatelessWidget {
-  const TracksModel({super.key, required this.tracks,});
+  const TracksModel({
+    super.key,
+    required this.tracks,
+    required this.listTracks,
+  });
 
   final Tracks tracks;
-
+  final List<Tracks> listTracks;
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -33,9 +37,7 @@ class TracksModel extends StatelessWidget {
       ),
       title: Text(tracks.track),
       onTap: () {
-        context
-            .read<PlaystopMusicCubit>()
-            .playTrack(tracks, tracks.id);
+        context.read<PlaystopMusicCubit>().playTrack(listTracks, tracks);
         context.read<PlaybackCubit>().play();
       },
     );

@@ -22,38 +22,33 @@ class FavoriteTabScreen extends StatelessWidget {
           return const Center(child: Text("Нет сохраненных треков"));
         }
 
+        // Преобразуем элементы из Hive в Track
+        final trackList = tracks.map((track) {
+          return Tracks(
+            id: track.id,
+            size: track.size,
+            track: track.track,
+            bitrate: track.bitrate,
+            duration: track.duration,
+            artistName: track.artistName,
+            playbackEnabled: track.playbackEnabled,
+            downloadEnabled: track.downloadEnabled,
+            imageJpg: track.imageJpg,
+            imageWebp: track.imageWebp,
+            explicit: track.explicit,
+            artistId: track.artistId,
+            isArtistForeignAgent: track.isArtistForeignAgent,
+          );
+        }).toList();
+
         return ListView.builder(
-          itemCount: tracks.length,
+          itemCount: trackList.length,
           itemBuilder: (context, index) {
-            final track = tracks[index];
-
-            final trackModels = Tracks(
-                id: track.id,
-                size: track.size,
-                track: track.track,
-                bitrate: track.bitrate,
-                duration: track.duration,
-                artistName: track.artistName,
-                playbackEnabled: track.playbackEnabled,
-                downloadEnabled: track.downloadEnabled,
-                imageJpg: track.imageJpg,
-                imageWebp: track.imageWebp,
-                explicit: track.explicit,
-                artistId: track.artistId,
-                isArtistForeignAgent: track.isArtistForeignAgent);
-
+            final track = trackList[index];
             return TracksModel(
-              tracks: trackModels,
+              tracks: track,
+              listTracks: trackList,
             );
-            // return ListTile(
-            //   leading: Image.network(track.imageJpg, width: 50, height: 50, fit: BoxFit.cover),
-            //   title: Text(track.track),
-            //   subtitle: Text(track.artistName),
-            //   trailing: IconButton(
-            //     icon: const Icon(Icons.delete, color: Colors.red),
-            //     onPressed: () => box.delete(track.id),
-            //   ),
-            // );
           },
         );
       },

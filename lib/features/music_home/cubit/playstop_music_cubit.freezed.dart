@@ -19,21 +19,22 @@ mixin _$PlaystopMusicState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function(Tracks track) currentTrack,
+    required TResult Function(List<Tracks> trackList, Tracks track)
+        currentTrack,
     required TResult Function(String error) error,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function(Tracks track)? currentTrack,
+    TResult? Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult? Function(String error)? error,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function(Tracks track)? currentTrack,
+    TResult Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult Function(String error)? error,
     required TResult orElse(),
   }) =>
@@ -125,7 +126,8 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function(Tracks track) currentTrack,
+    required TResult Function(List<Tracks> trackList, Tracks track)
+        currentTrack,
     required TResult Function(String error) error,
   }) {
     return initial();
@@ -135,7 +137,7 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function(Tracks track)? currentTrack,
+    TResult? Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult? Function(String error)? error,
   }) {
     return initial?.call();
@@ -145,7 +147,7 @@ class _$InitialImpl implements _Initial {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function(Tracks track)? currentTrack,
+    TResult Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult Function(String error)? error,
     required TResult orElse(),
   }) {
@@ -200,7 +202,7 @@ abstract class _$$CurrentTrackImplCopyWith<$Res> {
           _$CurrentTrackImpl value, $Res Function(_$CurrentTrackImpl) then) =
       __$$CurrentTrackImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({Tracks track});
+  $Res call({List<Tracks> trackList, Tracks track});
 
   $TracksCopyWith<$Res> get track;
 }
@@ -218,9 +220,14 @@ class __$$CurrentTrackImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? trackList = null,
     Object? track = null,
   }) {
     return _then(_$CurrentTrackImpl(
+      trackList: null == trackList
+          ? _value._trackList
+          : trackList // ignore: cast_nullable_to_non_nullable
+              as List<Tracks>,
       track: null == track
           ? _value.track
           : track // ignore: cast_nullable_to_non_nullable
@@ -242,14 +249,24 @@ class __$$CurrentTrackImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$CurrentTrackImpl implements _CurrentTrack {
-  const _$CurrentTrackImpl({required this.track});
+  const _$CurrentTrackImpl(
+      {required final List<Tracks> trackList, required this.track})
+      : _trackList = trackList;
+
+  final List<Tracks> _trackList;
+  @override
+  List<Tracks> get trackList {
+    if (_trackList is EqualUnmodifiableListView) return _trackList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_trackList);
+  }
 
   @override
   final Tracks track;
 
   @override
   String toString() {
-    return 'PlaystopMusicState.currentTrack(track: $track)';
+    return 'PlaystopMusicState.currentTrack(trackList: $trackList, track: $track)';
   }
 
   @override
@@ -257,11 +274,14 @@ class _$CurrentTrackImpl implements _CurrentTrack {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$CurrentTrackImpl &&
+            const DeepCollectionEquality()
+                .equals(other._trackList, _trackList) &&
             (identical(other.track, track) || other.track == track));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, track);
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_trackList), track);
 
   /// Create a copy of PlaystopMusicState
   /// with the given fields replaced by the non-null parameter values.
@@ -275,32 +295,33 @@ class _$CurrentTrackImpl implements _CurrentTrack {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function(Tracks track) currentTrack,
+    required TResult Function(List<Tracks> trackList, Tracks track)
+        currentTrack,
     required TResult Function(String error) error,
   }) {
-    return currentTrack(track);
+    return currentTrack(trackList, track);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function(Tracks track)? currentTrack,
+    TResult? Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult? Function(String error)? error,
   }) {
-    return currentTrack?.call(track);
+    return currentTrack?.call(trackList, track);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function(Tracks track)? currentTrack,
+    TResult Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult Function(String error)? error,
     required TResult orElse(),
   }) {
     if (currentTrack != null) {
-      return currentTrack(track);
+      return currentTrack(trackList, track);
     }
     return orElse();
   }
@@ -341,9 +362,11 @@ class _$CurrentTrackImpl implements _CurrentTrack {
 }
 
 abstract class _CurrentTrack implements PlaystopMusicState {
-  const factory _CurrentTrack({required final Tracks track}) =
-      _$CurrentTrackImpl;
+  const factory _CurrentTrack(
+      {required final List<Tracks> trackList,
+      required final Tracks track}) = _$CurrentTrackImpl;
 
+  List<Tracks> get trackList;
   Tracks get track;
 
   /// Create a copy of PlaystopMusicState
@@ -422,7 +445,8 @@ class _$ErrorImpl implements _Error {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() initial,
-    required TResult Function(Tracks track) currentTrack,
+    required TResult Function(List<Tracks> trackList, Tracks track)
+        currentTrack,
     required TResult Function(String error) error,
   }) {
     return error(this.error);
@@ -432,7 +456,7 @@ class _$ErrorImpl implements _Error {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? initial,
-    TResult? Function(Tracks track)? currentTrack,
+    TResult? Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult? Function(String error)? error,
   }) {
     return error?.call(this.error);
@@ -442,7 +466,7 @@ class _$ErrorImpl implements _Error {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? initial,
-    TResult Function(Tracks track)? currentTrack,
+    TResult Function(List<Tracks> trackList, Tracks track)? currentTrack,
     TResult Function(String error)? error,
     required TResult orElse(),
   }) {

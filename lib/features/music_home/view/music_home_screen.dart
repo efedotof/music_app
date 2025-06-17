@@ -47,12 +47,16 @@ class MusicHomeScreen extends StatelessWidget {
                     ),
                     Wrap(
                       runSpacing: 10,
-                      children: List.generate(
-                        tracks.length,
-                        (index) => TracksModel(tracks: tracks[index],),
-                      ),
+                      children: List.generate(tracks.length, (index) {
+                        return TracksModel(
+                          tracks: tracks[index],
+                          listTracks: tracks,
+                        );
+                      }),
                     ),
-                    const SizedBox(height: 100,)
+                    const SizedBox(
+                      height: 100,
+                    )
                   ],
                 ),
               );
@@ -61,7 +65,6 @@ class MusicHomeScreen extends StatelessWidget {
           );
         },
       ),
-      
     );
   }
 }
