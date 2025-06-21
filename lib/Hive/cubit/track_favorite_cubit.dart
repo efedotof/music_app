@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:music_app/Hive/repository/track_favorite_interface.dart';
-import 'package:music_app/features/music_home/cubit/favorite_button_cubit.dart';
-import 'package:music_app/music_model/tracks.dart';
+import 'package:music_app/features/music_home/music_cubit/favorite_button/favorite_button_cubit.dart';
+import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
 
 import '../model/track_favorite/track_favorite.dart';
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/features/main_home/widget/music_player_bottom.dart';
-import 'package:music_app/features/music_home/cubit/playstop_music_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
 import 'package:music_app/router/app_route.dart';
 
 @RoutePage()
@@ -29,27 +29,24 @@ class MainHomeScreen extends StatelessWidget {
                 right: 0,
                 child: BlocBuilder<PlaystopMusicCubit, PlaystopMusicState>(
                   builder: (context, state) {
-                    return const MusicPlayerBottom();
+                    return MusicPlayerBottom();
                   },
                 ),
               ),
             ],
           ),
-          bottomNavigationBar:
-              BottomNavigationBar(
-                currentIndex: tabsRouter.activeIndex,
-                onTap: (index) {
-                  tabsRouter.setActiveIndex(index);
-                },
-                items: [
-                  BottomNavigationBarItem(
-                      label: 'Home', icon: Icon(Icons.home)),
-                  BottomNavigationBarItem(
-                      label: 'Search', icon: Icon(Icons.search)),
-                  BottomNavigationBarItem(
-                      label: 'Favorite', icon: Icon(Icons.favorite)),
-                ],
-              ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: tabsRouter.activeIndex,
+            onTap: (index) {
+              tabsRouter.setActiveIndex(index);
+            },
+            items: [
+              BottomNavigationBarItem(label: 'Главная', icon: Icon(Icons.home)),
+              BottomNavigationBarItem(label: 'Поиск', icon: Icon(Icons.search)),
+              BottomNavigationBarItem(
+                  label: 'Избранное', icon: Icon(Icons.favorite)),
+            ],
+          ),
         );
       },
     );

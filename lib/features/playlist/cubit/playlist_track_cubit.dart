@@ -1,13 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:music_app/music_model/tracks.dart';
-import 'package:music_app/music_repository/music_repository.dart';
+import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
+import 'package:music_app/music_repository/music/music_repository.dart';
 
 part 'playlist_track_state.dart';
 part 'playlist_track_cubit.freezed.dart';
 
 class PlaylistTrackCubit extends Cubit<PlaylistTrackState> {
-  PlaylistTrackCubit({required MusicRepository repository}) : _repository = repository, super(PlaylistTrackState.initial());
+  PlaylistTrackCubit({required MusicRepository repository})
+      : _repository = repository,
+        super(PlaylistTrackState.initial());
   final MusicRepository _repository;
 
   Future<void> getTrackslists({required String url}) async {
@@ -24,17 +26,16 @@ class PlaylistTrackCubit extends Cubit<PlaylistTrackState> {
     }
   }
 
-  Future<List<Tracks>> getTracksToList({required String url}) async{
+  Future<List<Tracks>> getTracksToList({required String url}) async {
     try {
       final tracks = await _repository.getTracksByUrl(url);
-      if(tracks.isNotEmpty){
+      if (tracks.isNotEmpty) {
         return tracks;
-      }else{
+      } else {
         return [];
       }
     } catch (e) {
       return [];
     }
   }
-
 }

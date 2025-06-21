@@ -7,32 +7,25 @@ class SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController controller = TextEditingController();
-
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.075,
-        decoration: BoxDecoration(
-          color: const Color(0xFF2E333D),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: TextField(
-          controller: controller,
-          onSubmitted: (value) {
-            context.read<SearchCubit>().searchTracks(value);
-          },
-          decoration: InputDecoration(
-            hintText: 'Search',
-            hintStyle: const TextStyle(color: Color(0xFFB8CAE4)),
-            prefixIcon: const Icon(Icons.search, color: Color(0xFFB8CAE4)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(13),
-              borderSide: BorderSide.none,
-            ),
-            filled: false,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        onChanged: (query) {
+          context.read<SearchCubit>().searchTracks(query);
+        },
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          hintText: 'Поиск трека, плейлиста...',
+          // hintStyle: TextStyle(color: Colors.white54),
+          icon: Icon(
+            Icons.search,
           ),
+          suffixText: 'Отмена',
+          // suffixStyle: TextStyle(color: Colors.white),
         ),
       ),
     );

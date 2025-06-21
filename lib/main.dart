@@ -1,20 +1,22 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:music_app/Hive/cubit/track_favorite_cubit.dart';
 import 'package:music_app/Hive/repository/track_favorite_repository.dart';
-import 'package:music_app/features/music_home/cubit/favorite_button_cubit.dart';
-import 'package:music_app/features/music_home/cubit/music_cubit.dart';
-import 'package:music_app/features/music_home/cubit/playback_cubit.dart';
-import 'package:music_app/features/music_home/cubit/playlist_cubit.dart';
-import 'package:music_app/features/music_home/cubit/playstop_music_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/favorite_button/favorite_button_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/music/music_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/playback/playback_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/playlist/playlist_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
 import 'package:music_app/features/playlist/cubit/playlist_track_cubit.dart';
 import 'package:music_app/features/search/cubit/search_cubit.dart';
-import 'package:music_app/music_repository/music_repository.dart';
+import 'package:music_app/music_repository/audio_handler/audio_handler_repository.dart';
+import 'package:music_app/music_repository/music/music_repository.dart';
 import 'package:music_app/theme/cubit/theme_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'features/music_home/cubit/download_buttons_cubit.dart';
+import 'features/music_home/music_cubit/download_buttons/download_buttons_cubit.dart';
 import 'router/app_route.dart';
 import 'theme/theme.dart';
 import 'theme/theme/theme_repository.dart';
@@ -34,6 +36,15 @@ void main() async {
   final trackFavoriteRepository = TrackFavoriteRepository();
   await TrackFavoriteRepository.init();
 
+  final audioHandler = await AudioService.init(
+    builder: () => AudioHandlerRepository(repository: musicRepository),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.efedotov.channel.audio',
+      androidNotificationChannelName: 'Music Playback',
+      androidNotificationOngoing: true,
+    ),
+  );
+
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(
@@ -47,7 +58,7 @@ void main() async {
       ),
       BlocProvider(
         create: (context) => PlaystopMusicCubit(
-          repository: musicRepository,
+          audioHandler: audioHandler,
         ),
       ),
       BlocProvider(

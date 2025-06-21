@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:music_app/Hive/model/track_favorite/track_favorite.dart';
 import 'package:music_app/features/music_home/widget/widget.dart';
-import 'package:music_app/music_model/tracks.dart';
+import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
 
 @RoutePage()
 class FavoriteTabScreen extends StatelessWidget {
@@ -22,7 +22,6 @@ class FavoriteTabScreen extends StatelessWidget {
           return const Center(child: Text("Нет сохраненных треков"));
         }
 
-        // Преобразуем элементы из Hive в Track
         final trackList = tracks.map((track) {
           return Tracks(
             id: track.id,

@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/features/playlist/cubit/playlist_track_cubit.dart';
-import 'package:music_app/music_model/playlist.dart';
+import 'package:music_app/music_repository/music_model/playlist/playlist.dart';
 import 'package:music_app/router/app_route.dart';
 
 class PlaylistCard extends StatelessWidget {
@@ -19,55 +19,60 @@ class PlaylistCard extends StatelessWidget {
         context.pushRoute(PlaylistRoute(playlist: playlist));
       },
       child: Card(
-        
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 6,
+        shadowColor: Colors.black45,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: SizedBox(
-          width: 200,
-          height: 200,
+          width: 180,
+          height: 180,
           child: Stack(
             children: [
-              CachedNetworkImage(
-                imageUrl: playlist.imageUrl,
-                imageBuilder: (context, imageProvider) => Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: imageProvider,
-                      fit: BoxFit.fill,
-                    ),
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: playlist.imageUrl,
+                  fit: BoxFit.cover,
+                  width: 180,
+                  height: 180,
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
-                placeholder: (context, url) => const CircularProgressIndicator(),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
               ),
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
-                  decoration: BoxDecoration(color: Colors.black54),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          playlist.title,
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '${playlist.trackCount} треков',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
+                  decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(16),
+                          bottomRight: Radius.circular(16))),
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        playlist.title,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${playlist.trackCount} треков',
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),

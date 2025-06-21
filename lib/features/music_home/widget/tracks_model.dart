@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:music_app/features/music_home/cubit/playback_cubit.dart';
-import 'package:music_app/features/music_home/cubit/playstop_music_cubit.dart';
-import 'package:music_app/music_model/tracks.dart';
+import 'package:music_app/features/music_home/music_cubit/playback/playback_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
+import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
 
 class TracksModel extends StatelessWidget {
   const TracksModel({
@@ -17,6 +17,10 @@ class TracksModel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: () {
+        context.read<PlaybackCubit>().play();
+        context.read<PlaystopMusicCubit>().playTrack(listTracks, tracks);
+      },
       subtitle: Text(tracks.artistName),
       leading: ClipOval(
         child: CachedNetworkImage(
@@ -36,10 +40,6 @@ class TracksModel extends StatelessWidget {
         ),
       ),
       title: Text(tracks.track),
-      onTap: () {
-        context.read<PlaystopMusicCubit>().playTrack(listTracks, tracks);
-        context.read<PlaybackCubit>().play();
-      },
     );
   }
 }
