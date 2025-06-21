@@ -196,6 +196,7 @@ class AudioHandlerRepository extends BaseAudioHandler
   @override
   Future<void> close() async {
     await _player.dispose();
+    await AudioService.stop();
   }
 
   @override
