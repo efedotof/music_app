@@ -86,27 +86,31 @@ class AudioHandlerRepository extends BaseAudioHandler
   }
 
   Future<void> _playCurrentTrack() async {
-    if (_playlist.isEmpty) return;
+    try {
+      if (_playlist.isEmpty) return;
 
-    final currentTrack = _playlist[_currentTrackIndex];
-    final trackMeta = await _fetchTrackMeta(currentTrack.id);
+      final currentTrack = _playlist[_currentTrackIndex];
+      final trackMeta = await _fetchTrackMeta(currentTrack.id);
 
-    if (trackMeta != null) {
-      final url = await _repository.getTrackUrl(trackMeta['streaming']);
-      if (url != null) {
-        mediaItem.add(MediaItem(
-          id: currentTrack.id,
-          title: currentTrack.track,
-          artist: currentTrack.artistName,
-          artUri: Uri.tryParse(trackMeta['artwork'] ?? ''),
-        ));
-        await _player.setUrl(url);
-        if (_isPaused && _lastPosition != Duration.zero) {
-          await _player.seek(_lastPosition);
+      if (trackMeta != null) {
+        final url = await _repository.getTrackUrl(trackMeta['streaming']);
+        if (url != null) {
+          mediaItem.add(MediaItem(
+            id: currentTrack.id,
+            title: currentTrack.track,
+            artist: currentTrack.artistName,
+            artUri: Uri.tryParse(trackMeta['artwork'] ?? ''),
+          ));
+          await _player.setUrl(url);
+          if (_isPaused && _lastPosition != Duration.zero) {
+            await _player.seek(_lastPosition);
+          }
+          await _player.play();
+          _isPaused = false;
         }
-        await _player.play();
-        _isPaused = false;
       }
+    } catch (e) {
+      debugPrint("Произошла ошибка: $e");
     }
   }
 
@@ -119,30 +123,13 @@ class AudioHandlerRepository extends BaseAudioHandler
   }
 
   @override
-  Future<void> handlePlay() => play();
-
-  @override
-  Future<void> handlePause() => pause();
-
-  @override
-  Future<void> handleStop() => stop();
-
-  @override
-  Future<void> handleSkipToNext() => skipToNext();
-
-  @override
-  Future<void> handleSkipToPrevious() => skipToPrevious();
-
-  @override
-  Future<void> handleSeek(Duration position) => seek(position);
-
-  @override
   Future<void> play() async {
     if (_isPaused && _lastPosition != Duration.zero) {
       await _player.seek(_lastPosition);
     }
     await _player.play();
     _isPaused = false;
+    _broadcastState(_player.playbackEvent);
   }
 
   @override
@@ -150,6 +137,7 @@ class AudioHandlerRepository extends BaseAudioHandler
     _lastPosition = _player.position;
     await _player.pause();
     _isPaused = true;
+    _broadcastState(_player.playbackEvent);
   }
 
   @override
@@ -157,25 +145,53 @@ class AudioHandlerRepository extends BaseAudioHandler
     _lastPosition = Duration.zero;
     await _player.stop();
     _isPaused = false;
+    _broadcastState(_player.playbackEvent);
   }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) async {
+    _player.seek(position);
+    _broadcastState(_player.playbackEvent);
+  }
 
   @override
   Future<void> skipToNext() async {
-    if (_playlist.isEmpty) return;
+    if (_playlist.isEmpty) {
+      debugPrint('Пустой плейлист ска');
+      return;
+    }
     _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
     await _playCurrentTrack();
+    _broadcastState(_player.playbackEvent);
   }
 
   @override
   Future<void> skipToPrevious() async {
-    if (_playlist.isEmpty) return;
+    debugPrint('Прошлоооееее');
+    if (_playlist.isEmpty) {
+      debugPrint('Пустой плейлист ска');
+      return;
+    }
     _currentTrackIndex =
         (_currentTrackIndex - 1 + _playlist.length) % _playlist.length;
     await _playCurrentTrack();
+    _broadcastState(_player.playbackEvent);
   }
+
+  @override
+  Future<void> onPlay() => play();
+
+  @override
+  Future<void> onPause() => pause();
+
+  @override
+  Future<void> onStop() => stop();
+
+  @override
+  Future<void> onSkipToNext() => skipToNext();
+
+  @override
+  Future<void> onSkipToPrevious() => skipToPrevious();
 
   @override
   void toggleLoop() {

@@ -1,38 +1,101 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:music_app/Hive/cubit/track_favorite_cubit.dart';
-import 'package:music_app/features/music_home/music_cubit/download_buttons/download_buttons_cubit.dart';
-import 'package:music_app/features/music_home/music_cubit/favorite_button/favorite_button_cubit.dart';
-import 'package:music_app/features/music_home/music_cubit/playback/playback_cubit.dart';
 import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
 import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
+import 'album_art_widget.dart';
+import 'extra_buttons_repeat_like_download_widget.dart';
+import 'main_controls_widget.dart';
+import 'title_artist_widget.dart';
 
-class CurrentTrackWidget extends StatelessWidget {
-  const CurrentTrackWidget(
-      {super.key,
-      required this.playstopCubit,
-      required this.track,
-      required this.trackList});
+class CurrentTrackWidget extends StatefulWidget {
+  const CurrentTrackWidget({
+    super.key,
+    required this.playstopCubit,
+    required this.track,
+    required this.trackList,
+  });
+
   final PlaystopMusicCubit playstopCubit;
   final Tracks track;
   final List<Tracks> trackList;
+
+  @override
+  State<CurrentTrackWidget> createState() => _CurrentTrackWidgetState();
+}
+
+class _CurrentTrackWidgetState extends State<CurrentTrackWidget>
+    with TickerProviderStateMixin {
+  bool isMore = false;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      padding: const EdgeInsets.all(8.0),
-      color: Colors.black87,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          StreamBuilder<Duration>(
-            stream: playstopCubit.audioHandler.positionStream,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                final position = snapshot.data!;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF101010), Color(0xFF181818)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black45,
+                blurRadius: 8,
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: ClipRect(
+                child: isMore
+                    ? ExtraButtonsRepeatLikeDownloadWidget(
+                        playstopCubit: widget.playstopCubit,
+                        track: widget.track,
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isMore = !isMore;
+                    });
+                  },
+                  child: AlbumArtWidget(
+                    track: widget.track,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                TitleArtistWidget(
+                  track: widget.track,
+                ),
+                const SizedBox(width: 12),
+                MainControlsWidget(
+                  playstopCubit: widget.playstopCubit,
+                  trackList: widget.trackList,
+                  track: widget.track,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+            const SizedBox(height: 12),
+            StreamBuilder<Duration>(
+              stream: widget.playstopCubit.audioHandler.positionStream,
+              builder: (context, snapshot) {
+                final position = snapshot.data ?? Duration.zero;
+
                 return StreamBuilder<Duration?>(
-                  stream: playstopCubit.audioHandler.durationStream,
+                  stream: widget.playstopCubit.audioHandler.durationStream,
                   builder: (context, durationSnapshot) {
                     final duration = durationSnapshot.data ?? Duration.zero;
                     final percentage = duration.inSeconds > 0
@@ -42,46 +105,49 @@ class CurrentTrackWidget extends StatelessWidget {
                     return Column(
                       children: [
                         GestureDetector(
-                          behavior: HitTestBehavior.translucent,
                           onHorizontalDragUpdate: (details) {
                             final box = context.findRenderObject() as RenderBox;
                             final localOffset =
                                 box.globalToLocal(details.globalPosition);
                             final newPosition = localOffset.dx / box.size.width;
-                            final newSeekPosition = Duration(
+                            final seekTo = Duration(
                                 seconds:
                                     (newPosition * duration.inSeconds).toInt());
-                            playstopCubit.audioHandler.seek(newSeekPosition);
+                            widget.playstopCubit.audioHandler.seek(seekTo);
                           },
                           child: SizedBox(
-                            height: 20,
+                            height: 24,
                             child: Stack(
                               alignment: Alignment.centerLeft,
                               children: [
                                 Container(
                                   height: 5,
                                   width: double.infinity,
-                                  color: Colors.grey[800],
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[800],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
                                 ),
                                 FractionallySizedBox(
                                   widthFactor: percentage,
                                   child: Container(
                                     height: 5,
-                                    color: Colors.green,
+                                    decoration: BoxDecoration(
+                                      color: Colors.greenAccent,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
                                   ),
                                 ),
                                 Positioned(
-                                  left:
-                                      (MediaQuery.of(context).size.width - 16) *
-                                          percentage,
+                                  left: screenWidth * percentage - 6,
                                   child: Container(
-                                    width: 10,
-                                    height: 10,
+                                    width: 12,
+                                    height: 12,
                                     decoration: BoxDecoration(
-                                      color: Colors.green,
                                       shape: BoxShape.circle,
+                                      color: Colors.greenAccent,
                                       border: Border.all(
-                                          color: Colors.white, width: 2),
+                                          color: Colors.white, width: 1),
                                     ),
                                   ),
                                 ),
@@ -93,166 +159,21 @@ class CurrentTrackWidget extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              _formatDuration(position),
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 12),
-                            ),
-                            Text(
-                              _formatDuration(duration),
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 12),
-                            ),
+                            Text(_formatDuration(position),
+                                style: TextStyle(
+                                    color: Colors.grey[300], fontSize: 12)),
+                            Text(_formatDuration(duration),
+                                style: TextStyle(
+                                    color: Colors.grey[300], fontSize: 12)),
                           ],
                         ),
                       ],
                     );
                   },
                 );
-              } else {
-                return Container(height: 5, color: Colors.grey);
-              }
-            },
-          ),
-          SizedBox(
-            height: 70,
-            child: Row(
-              children: [
-                ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: track.imageWebp,
-                    imageBuilder: (context, imageProvider) => Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    placeholder: (context, url) =>
-                        const CircularProgressIndicator(),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
-                  ),
-                ),
-                Expanded(
-                  child: ListTile(
-                    title: Text(track.track,
-                        style: const TextStyle(color: Colors.white)),
-                    subtitle: Text(track.artistName,
-                        style: const TextStyle(color: Colors.white70)),
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        playstopCubit.playPreviousTrack();
-                        context
-                            .read<FavoriteButtonCubit>()
-                            .setFavorite(track: track);
-                      },
-                      icon:
-                          const Icon(Icons.skip_previous, color: Colors.white),
-                    ),
-                    BlocBuilder<PlaybackCubit, PlaybackState>(
-                      builder: (context, playbackState) {
-                        return IconButton(
-                          icon: Icon(
-                            playbackState.maybeWhen(
-                              playing: () => Icons.pause,
-                              paused: () => Icons.play_arrow,
-                              orElse: () => Icons.play_arrow,
-                            ),
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            if (playbackState is Playing) {
-                              playstopCubit.pauseTrack();
-                              context.read<PlaybackCubit>().pause();
-                            } else {
-                              playstopCubit.playTrack(trackList, track);
-                              context.read<PlaybackCubit>().play();
-                            }
-                          },
-                        );
-                      },
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        playstopCubit.playNextTrack();
-                        context
-                            .read<FavoriteButtonCubit>()
-                            .setFavorite(track: track);
-                      },
-                      icon: const Icon(Icons.skip_next, color: Colors.white),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => playstopCubit.toggleLoop(),
-                      icon: const Icon(Icons.repeat_outlined,
-                          color: Colors.white),
-                    ),
-                    BlocBuilder<FavoriteButtonCubit, FavoriteButtonState>(
-                      builder: (context, state) {
-                        return IconButton(
-                          onPressed: () {
-                            context
-                                .read<TrackFavoriteCubit>()
-                                .addTrack(track: track, context: context);
-                          },
-                          icon: state.when(
-                            noFavorite: () => const Icon(Icons.favorite_outline,
-                                color: Colors.white),
-                            favorite: () =>
-                                const Icon(Icons.favorite, color: Colors.red),
-                          ),
-                        );
-                      },
-                    ),
-                    BlocBuilder<DownloadButtonsCubit, DownloadButtonsState>(
-                      builder: (context, state) {
-                        return state.when(
-                          noDownload: () => IconButton(
-                            icon:
-                                const Icon(Icons.download, color: Colors.white),
-                            onPressed: () {
-                              context
-                                  .read<DownloadButtonsCubit>()
-                                  .downloadTrack(track: track);
-                            },
-                          ),
-                          downloads: (double progress) => SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              value: progress,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          successDownloads: () => IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
-                            onPressed: () {
-                              context
-                                  .read<DownloadButtonsCubit>()
-                                  .downloadTrack(track: track);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
+              },
             ),
-          ),
-        ],
-      ),
+          ])),
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -14,11 +15,34 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
 
   List<Tracks> _playlist = [];
   int _currentTrackIndex = 0;
+  StreamSubscription<Duration>? _positionSubscription;
+  StreamSubscription<Duration?>? _durationSubscription;
+
+  Duration? _trackDuration;
 
   PlaystopMusicCubit({required this.audioHandler})
-      : super(const PlaystopMusicState.initial());
+      : super(const PlaystopMusicState.initial()) {
+    _listenToPositionStream();
+  }
 
-  Future<void> playTrack(List<Tracks> playlist, Tracks track) async {
+  void _listenToPositionStream() {
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
+
+    _durationSubscription = audioHandler.durationStream.listen((duration) {
+      _trackDuration = duration;
+    });
+
+    _positionSubscription = audioHandler.positionStream.listen((position) {
+      if (_trackDuration != null &&
+          position.inMilliseconds >= _trackDuration!.inMilliseconds - 200) {
+        playNextTrack();
+      }
+    });
+  }
+
+  Future<void> playTrack(
+      {required List<Tracks> playlist, required Tracks track}) async {
     try {
       _playlist = playlist;
       _currentTrackIndex = playlist.indexOf(track);
@@ -28,8 +52,12 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
         trackList: _playlist,
         track: _playlist[_currentTrackIndex],
       ));
+
       await audioHandler.loadPlaylist(_playlist);
       await audioHandler.seek(Duration.zero);
+
+      _listenToPositionStream();
+
       final isLocalFile = File(track.id).existsSync();
       if (isLocalFile) {
         await audioHandler.playLocalFile(track.id);
@@ -115,6 +143,8 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
 
   @override
   Future<void> close() async {
+    await _positionSubscription?.cancel();
+    await _durationSubscription?.cancel();
     await audioHandler.close();
     return super.close();
   }

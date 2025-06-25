@@ -14,11 +14,15 @@ abstract interface class AudioHandlerInterface {
   Stream<Duration> get positionStream;
   Stream<Duration?> get durationStream;
 
-  Future<void> handlePlay();
-  Future<void> handlePause();
-  Future<void> handleStop();
-  Future<void> handleSkipToNext();
-  Future<void> handleSkipToPrevious();
-  Future<void> handleSeek(Duration position);
+  Future<void> onPlay();
+
+  Future<void> onPause();
+
+  Future<void> onStop();
+
+  Future<void> onSkipToNext();
+
+  Future<void> onSkipToPrevious();
+
   Future<void> playLocalFile(String filePath);
 }

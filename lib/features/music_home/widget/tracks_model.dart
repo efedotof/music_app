@@ -19,7 +19,9 @@ class TracksModel extends StatelessWidget {
     return ListTile(
       onTap: () {
         context.read<PlaybackCubit>().play();
-        context.read<PlaystopMusicCubit>().playTrack(listTracks, tracks);
+        context
+            .read<PlaystopMusicCubit>()
+            .playTrack(playlist: listTracks, track: tracks);
       },
       subtitle: Text(tracks.artistName),
       leading: ClipOval(

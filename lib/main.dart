@@ -41,7 +41,10 @@ void main() async {
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.efedotov.channel.audio',
       androidNotificationChannelName: 'Music Playback',
-      androidNotificationOngoing: true,
+      androidNotificationOngoing: false,
+      notificationColor: Colors.black,
+      androidNotificationClickStartsActivity: true,
+      androidStopForegroundOnPause: true,
     ),
   );
 

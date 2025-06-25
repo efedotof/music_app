@@ -72,7 +72,7 @@ class SearchScreen extends StatelessWidget {
                               onTap: () {
                                 context
                                     .read<PlaystopMusicCubit>()
-                                    .playTrack(tracks, track);
+                                    .playTrack(playlist: tracks, track: track);
                                 context.read<PlaybackCubit>().play();
                               },
                             );
