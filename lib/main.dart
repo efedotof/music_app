@@ -24,21 +24,11 @@ import 'theme/theme/theme_repository.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  final preference = await SharedPreferences.getInstance();
-  final themeRepository = ThemeRepository(preferences: preference);
   final musicRepository = MusicRepository();
-
-  final trackFavoriteRepository = TrackFavoriteRepository();
-  await TrackFavoriteRepository.init();
-
   final audioHandler = await AudioService.init(
     builder: () => AudioHandlerRepository(repository: musicRepository),
     config: const AudioServiceConfig(
+      androidResumeOnClick: true,
       androidNotificationChannelId: 'com.efedotov.channel.audio',
       androidNotificationChannelName: 'Music Playback',
       androidNotificationOngoing: false,
@@ -47,6 +37,16 @@ void main() async {
       androidStopForegroundOnPause: true,
     ),
   );
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  final preference = await SharedPreferences.getInstance();
+  final themeRepository = ThemeRepository(preferences: preference);
+
+  final trackFavoriteRepository = TrackFavoriteRepository();
+  await TrackFavoriteRepository.init();
 
   runApp(MultiBlocProvider(
     providers: [

@@ -32,8 +32,9 @@ class _MusicPlayerBottomState extends State<MusicPlayerBottom> {
             );
           },
           initial: () => const SizedBox.shrink(),
-          error: (error) => Text('Ошибка воспроизведения: $error',
-              style: const TextStyle(color: Colors.white)),
+          error: (error) => Text(
+            'Ошибка воспроизведения: $error',
+          ),
         );
       },
     );

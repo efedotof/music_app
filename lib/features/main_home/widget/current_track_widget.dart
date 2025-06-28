@@ -28,8 +28,6 @@ class _CurrentTrackWidgetState extends State<CurrentTrackWidget>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       child: Container(
@@ -117,41 +115,52 @@ class _CurrentTrackWidgetState extends State<CurrentTrackWidget>
                           },
                           child: SizedBox(
                             height: 24,
-                            child: Stack(
-                              alignment: Alignment.centerLeft,
-                              children: [
-                                Container(
-                                  height: 5,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[800],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                                FractionallySizedBox(
-                                  widthFactor: percentage,
-                                  child: Container(
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: Colors.greenAccent,
-                                      borderRadius: BorderRadius.circular(4),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final barWidth = constraints.maxWidth;
+                                final knobPosition = barWidth * percentage;
+
+                                return Stack(
+                                  alignment: Alignment.centerLeft,
+                                  children: [
+                                    Container(
+                                      height: 5,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[800],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: screenWidth * percentage - 6,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.greenAccent,
-                                      border: Border.all(
-                                          color: Colors.white, width: 1),
+                                    FractionallySizedBox(
+                                      widthFactor: percentage,
+                                      child: Container(
+                                        height: 5,
+                                        decoration: BoxDecoration(
+                                          color: Colors.greenAccent,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ],
+                                    Positioned(
+                                      left: (knobPosition - 6).clamp(
+                                          0.0,
+                                          barWidth -
+                                              12), // отступ 6 для центрирования кружка по середине
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.greenAccent,
+                                          border: Border.all(
+                                              color: Colors.white, width: 1),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                         ),

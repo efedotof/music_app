@@ -23,8 +23,7 @@ mixin _$Playlist {
   int get id => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String get url => throw _privateConstructorUsedError;
-  String get description =>
-      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  String get description => throw _privateConstructorUsedError;
   @JsonKey(name: 'square200', defaultValue: '')
   String get imageUrl => throw _privateConstructorUsedError;
   int get trackCount => throw _privateConstructorUsedError;
@@ -192,7 +191,6 @@ class _$PlaylistImpl implements _Playlist {
   final String url;
   @override
   final String description;
-// ignore: invalid_annotation_target
   @override
   @JsonKey(name: 'square200', defaultValue: '')
   final String imageUrl;
@@ -261,7 +259,7 @@ abstract class _Playlist implements Playlist {
   @override
   String get url;
   @override
-  String get description; // ignore: invalid_annotation_target
+  String get description;
   @override
   @JsonKey(name: 'square200', defaultValue: '')
   String get imageUrl;
