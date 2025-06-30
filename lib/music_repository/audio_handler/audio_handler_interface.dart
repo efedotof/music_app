@@ -11,6 +11,7 @@ abstract interface class AudioHandlerInterface {
   Future<void> skipToPrevious();
   void toggleLoop();
   Future<void> close();
+  void toggleShuffle();
 
   Stream<Duration> get positionStream;
   Stream<Duration?> get durationStream;

@@ -21,6 +21,7 @@ class AudioHandlerRepository extends BaseAudioHandler
   bool _isShuffling = false;
   List<int> _shuffleIndices = [];
   Duration? _lastPosition;
+  Completer<void>? _stopCompleter;
 
   final _currentTrackController = StreamController<Tracks>.broadcast();
 
@@ -53,13 +54,20 @@ class AudioHandlerRepository extends BaseAudioHandler
 
     _player.playbackEventStream.listen(_broadcastState);
     _player.playerStateStream.listen((state) {
-      if (state.processingState == ProcessingState.completed) {
+      if (state.processingState == ProcessingState.completed && !_isPaused) {
         if (_isLooping) {
           _player.seek(Duration.zero);
           _player.play();
         } else {
           skipToNext();
         }
+      }
+
+      // Обработка завершения остановки
+      if (_stopCompleter != null &&
+          state.processingState == ProcessingState.idle) {
+        _stopCompleter?.complete();
+        _stopCompleter = null;
       }
     });
 
@@ -154,11 +162,10 @@ class AudioHandlerRepository extends BaseAudioHandler
       await _player.setUrl(url);
       _currentTrackController.add(track);
 
-      // Восстанавливаем позицию если есть
       final positionToSeek = seekPosition ?? _lastPosition;
       if (positionToSeek != null) {
         await _player.seek(positionToSeek);
-        _lastPosition = null; // Сбрасываем сохраненную позицию
+        _lastPosition = null;
       }
 
       await _player.play();
@@ -188,11 +195,9 @@ class AudioHandlerRepository extends BaseAudioHandler
   Future<void> play() async {
     try {
       if (_isPaused) {
-        // При возобновлении воспроизведения после паузы
         await _player.play();
         _isPaused = false;
       } else if (!_player.playing) {
-        // При старте нового воспроизведения
         await _playCurrentTrack(seekPosition: _lastPosition);
       }
       _updateControls();
@@ -215,11 +220,14 @@ class AudioHandlerRepository extends BaseAudioHandler
   @override
   Future<void> stop() async {
     try {
-      // Сохраняем текущую позицию перед остановкой
       _lastPosition = _player.position;
       LogService.log('⏹ Сохранена позиция: $_lastPosition');
 
+      // Ждем полной остановки плеера
+      _stopCompleter = Completer<void>();
       await _player.stop();
+      await _stopCompleter?.future;
+
       _isPaused = false;
       _updateControls();
     } catch (e, st) {
