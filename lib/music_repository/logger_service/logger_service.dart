@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 class LogService {
   static final Logger _logger = Logger(printer: PrettyPrinter());
   static final Dio _dio =
-      Dio(BaseOptions(baseUrl: 'http://192.168.31.152:3000'));
+      Dio(BaseOptions(baseUrl: 'http://'));
 
   static Future<void> logToFile(String message) async {
     try {
