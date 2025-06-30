@@ -8,8 +8,8 @@
     <application
         android:label="MusicApp"
         android:name="${applicationName}"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
-
         <activity
             android:name="com.efedotov.music_app.MainActivity"
             android:exported="true"
@@ -32,16 +32,21 @@
         <service
             android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
-            android:exported="false"
-             android:stopWithTask="true">
+            android:exported="true"
+            android:stopWithTask="true">
+
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
+            
+            <meta-data
+                android:name="android.media.browse.MediaBrowserService"
+                android:value="com.ryanheise.audioservice.MediaBrowserServiceImpl" />
+                
+            <meta-data
+                android:name="android.media.session"
+                android:resource="@xml/media_session" />
         </service>
-
-
-
-
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

@@ -34,7 +34,9 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
       if (_trackDuration!.inMilliseconds > 0 &&
           position.inMilliseconds <= _trackDuration!.inMilliseconds + 1000) {
         debugPrint('🔁 Автоматический переход к следующему треку');
-        audioHandler.skipToNext();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          audioHandler.skipToNext();
+        });
       }
     }
   }
@@ -44,16 +46,13 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
     try {
       _playlist = playlist;
       await audioHandler.loadPlaylist(playlist);
-      await audioHandler.seek(Duration.zero);
-
       final isLocal = File(track.id).existsSync();
       if (isLocal) {
         await audioHandler.playLocalFile(track.id);
-      } else {
-        await audioHandler.play();
       }
     } catch (e) {
-      emit(PlaystopMusicState.error(error: e.toString()));
+      emit(PlaystopMusicState.error(
+          error: 'Ошибка воспроизведения: ${e.toString()}'));
     }
   }
 

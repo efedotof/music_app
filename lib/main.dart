@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +19,7 @@ import 'package:music_app/music_repository/music/music_repository.dart';
 import 'package:music_app/theme/cubit/theme_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/music_home/music_cubit/download_buttons/download_buttons_cubit.dart';
+import 'music_repository/logger_service/logger_service.dart';
 import 'router/app_route.dart';
 import 'theme/theme.dart';
 import 'theme/theme/theme_repository.dart';
@@ -35,6 +38,8 @@ void main() async {
       notificationColor: Colors.black,
       androidNotificationClickStartsActivity: true,
       androidStopForegroundOnPause: true,
+      androidNotificationIcon: 'mipmap/ic_launcher',
+      androidShowNotificationBadge: true,
     ),
   );
   await SystemChrome.setPreferredOrientations([
@@ -48,41 +53,51 @@ void main() async {
   final trackFavoriteRepository = TrackFavoriteRepository();
   await TrackFavoriteRepository.init();
 
-  runApp(MultiBlocProvider(
-    providers: [
-      BlocProvider(
-        create: (context) => ThemeCubit(themeInterface: themeRepository),
-      ),
-      BlocProvider(
-        create: (context) => MusicCubit(repository: musicRepository),
-      ),
-      BlocProvider(
-        create: (context) => PlaybackCubit(),
-      ),
-      BlocProvider(
-        create: (context) => PlaystopMusicCubit(
-          audioHandler: audioHandler,
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    LogService.error('Flutter Error', details.exception, details.stack);
+  };
+
+  runZonedGuarded(() {
+    runApp(MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => ThemeCubit(themeInterface: themeRepository),
         ),
-      ),
-      BlocProvider(
-          create: (context) => PlaylistCubit(repository: musicRepository)),
-      BlocProvider(
-          create: (context) =>
-              DownloadButtonsCubit(interface: musicRepository)),
-      BlocProvider(
-          create: (context) => SearchCubit(repository: musicRepository)),
-      BlocProvider(
-          create: (context) => PlaylistTrackCubit(repository: musicRepository)),
-      BlocProvider(
-        create: (context) => FavoriteButtonCubit(
-            trackFavoriteInterface: trackFavoriteRepository),
-      ),
-      BlocProvider(
-          create: (context) => TrackFavoriteCubit(
-              trackFavoriteRepository: trackFavoriteRepository)),
-    ],
-    child: const MusicApp(),
-  ));
+        BlocProvider(
+          create: (context) => MusicCubit(repository: musicRepository),
+        ),
+        BlocProvider(
+          create: (context) => PlaybackCubit(),
+        ),
+        BlocProvider(
+          create: (context) => PlaystopMusicCubit(
+            audioHandler: audioHandler,
+          ),
+        ),
+        BlocProvider(
+            create: (context) => PlaylistCubit(repository: musicRepository)),
+        BlocProvider(
+            create: (context) =>
+                DownloadButtonsCubit(interface: musicRepository)),
+        BlocProvider(
+            create: (context) => SearchCubit(repository: musicRepository)),
+        BlocProvider(
+            create: (context) =>
+                PlaylistTrackCubit(repository: musicRepository)),
+        BlocProvider(
+          create: (context) => FavoriteButtonCubit(
+              trackFavoriteInterface: trackFavoriteRepository),
+        ),
+        BlocProvider(
+            create: (context) => TrackFavoriteCubit(
+                trackFavoriteRepository: trackFavoriteRepository)),
+      ],
+      child: const MusicApp(),
+    ));
+  }, (error, stackTrace) {
+    LogService.error('Zoned Error', error, stackTrace);
+  });
 }
 
 class MusicApp extends StatefulWidget {

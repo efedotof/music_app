@@ -1,9 +1,8 @@
 import 'dart:async';
-
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:music_app/music_repository/logger_service/logger_service.dart';
 import 'package:music_app/music_repository/music/music_repository.dart';
 import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
 
@@ -19,31 +18,32 @@ class AudioHandlerRepository extends BaseAudioHandler
   int _currentTrackIndex = 0;
   bool _isPaused = false;
   bool _isLooping = false;
+  bool _isShuffling = false;
+  List<int> _shuffleIndices = [];
+  Duration? _lastPosition;
 
   final _currentTrackController = StreamController<Tracks>.broadcast();
 
   AudioHandlerRepository({required MusicRepository repository})
       : _repository = repository {
     _init();
-
-    // Добавляем слушатель для очереди
     queue.stream.listen((queue) {
       _logQueueContent(queue);
     });
   }
 
-  // Метод для логирования содержимого очереди
   void _logQueueContent(List<MediaItem> queue) {
     if (queue.isEmpty) {
-      debugPrint('📭 Очередь уведомления ПУСТА');
+      LogService.log('📭 Очередь уведомления ПУСТА');
       return;
     }
 
-    debugPrint('📋 Содержимое очереди уведомления (${queue.length} треков):');
+    LogService.log(
+        '📋 Содержимое очереди уведомления (${queue.length} треков):');
     for (int i = 0; i < queue.length; i++) {
       final item = queue[i];
       final isCurrent = (mediaItem.value?.id == item.id) ? ' [ТЕКУЩИЙ]' : '';
-      debugPrint('  ${i + 1}. ${item.title} - ${item.artist}$isCurrent');
+      LogService.log('  ${i + 1}. ${item.title} - ${item.artist}$isCurrent');
     }
   }
 
@@ -52,7 +52,6 @@ class AudioHandlerRepository extends BaseAudioHandler
     await session.configure(AudioSessionConfiguration.music());
 
     _player.playbackEventStream.listen(_broadcastState);
-
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         if (_isLooping) {
@@ -72,43 +71,17 @@ class AudioHandlerRepository extends BaseAudioHandler
 
   @override
   Stream<Duration> get positionStream => _player.positionStream;
+
   @override
   Stream<Duration?> get durationStream => _player.durationStream;
-
-  Object _mediaControlToString(MediaControl control) {
-    switch (control.action) {
-      case MediaAction.play:
-        return 'PLAY';
-      case MediaAction.pause:
-        return 'PAUSE';
-      case MediaAction.stop:
-        return 'STOP';
-      case MediaAction.skipToNext:
-        return 'SKIP_TO_NEXT';
-      case MediaAction.skipToPrevious:
-        return 'SKIP_TO_PREVIOUS';
-      case MediaAction.fastForward:
-        return 'FAST_FORWARD';
-      case MediaAction.rewind:
-        return 'REWIND';
-      default:
-        return control.action;
-    }
-  }
 
   void _updateControls() {
     final controlsList = [
       MediaControl.skipToPrevious,
-      _player.playing ? MediaControl.pause : MediaControl.play,
+      if (_player.playing) MediaControl.pause else MediaControl.play,
       MediaControl.stop,
       MediaControl.skipToNext,
     ];
-
-    final controlsString = controlsList.map(_mediaControlToString).join(', ');
-    debugPrint('🎛️ Список MediaControl: [$controlsString]');
-    debugPrint('🔄 Обновление контролов уведомления: '
-        'Playing: ${_player.playing}, '
-        'Index: $_currentTrackIndex');
 
     playbackState.add(playbackState.value.copyWith(
       controls: controlsList,
@@ -124,6 +97,15 @@ class AudioHandlerRepository extends BaseAudioHandler
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
+      queueIndex: _currentTrackIndex,
+      systemActions: {
+        MediaAction.play,
+        MediaAction.pause,
+        MediaAction.stop,
+        MediaAction.skipToNext,
+        MediaAction.skipToPrevious,
+        MediaAction.seek,
+      },
     ));
   }
 
@@ -131,28 +113,31 @@ class AudioHandlerRepository extends BaseAudioHandler
     _updateControls();
   }
 
-  Future<void> _playCurrentTrack() async {
+  Future<void> _playCurrentTrack({Duration? seekPosition}) async {
     if (_playlist.isEmpty || _currentTrackIndex >= _playlist.length) {
-      debugPrint('❌ Плейлист пуст или индекс за пределами.');
+      LogService.log('❌ Плейлист пуст или индекс за пределами.');
       return;
     }
 
-    final track = _playlist[_currentTrackIndex];
-    debugPrint('▶️ Проигрываю трек: ${track.track} (${track.id})');
+    final effectiveIndex =
+        _isShuffling ? _shuffleIndices[_currentTrackIndex] : _currentTrackIndex;
 
-    final meta = await _fetchTrackMeta(track.id);
-    if (meta == null) {
-      debugPrint('❌ Метаданные не найдены для трека: ${track.id}');
-      return;
-    }
-
-    final url = await _repository.getTrackUrl(meta['streaming']);
-    if (url == null || url.isEmpty) {
-      debugPrint('❌ URL не получен или пустой для трека: ${track.id}');
-      return;
-    }
+    final track = _playlist[effectiveIndex];
+    LogService.log('▶️ Проигрываю трек: ${track.track} (${track.id})');
 
     try {
+      final meta = await _fetchTrackMeta(track.id);
+      if (meta == null) {
+        LogService.log('❌ Метаданные не найдены для трека: ${track.id}');
+        return;
+      }
+
+      final url = await _repository.getTrackUrl(meta['streaming']);
+      if (url == null || url.isEmpty) {
+        LogService.log('❌ URL не получен или пустой для трека: ${track.id}');
+        return;
+      }
+
       final item = MediaItem(
         id: track.id,
         title: track.track,
@@ -160,17 +145,28 @@ class AudioHandlerRepository extends BaseAudioHandler
         artUri: Uri.tryParse(track.imageWebp),
       );
 
+      queue.add([item]);
       mediaItem.add(item);
-      queue.add([item]); // Здесь обновляется очередь
+      playbackState.add(playbackState.value.copyWith(
+        queueIndex: 0,
+      ));
 
       await _player.setUrl(url);
       _currentTrackController.add(track);
+
+      // Восстанавливаем позицию если есть
+      final positionToSeek = seekPosition ?? _lastPosition;
+      if (positionToSeek != null) {
+        await _player.seek(positionToSeek);
+        _lastPosition = null; // Сбрасываем сохраненную позицию
+      }
+
       await _player.play();
       _updateControls();
-      debugPrint('✅ Воспроизведение начато: $url');
+
+      LogService.log('✅ Воспроизведение начато: $url');
     } catch (e, st) {
-      debugPrint('❌ Ошибка при воспроизведении: $e');
-      debugPrint(st.toString());
+      LogService.error('❌ Ошибка при воспроизведении', e, st);
     }
   }
 
@@ -184,106 +180,155 @@ class AudioHandlerRepository extends BaseAudioHandler
   Future<void> loadPlaylist(List<Tracks> tracks) async {
     _playlist = tracks;
     _currentTrackIndex = 0;
+    _shuffleIndices = List.generate(_playlist.length, (i) => i)..shuffle();
     await _playCurrentTrack();
   }
 
   @override
   Future<void> play() async {
-    if (_isPaused) {
-      await _player.play();
-    } else if (!_player.playing) {
-      await _playCurrentTrack();
+    try {
+      if (_isPaused) {
+        // При возобновлении воспроизведения после паузы
+        await _player.play();
+        _isPaused = false;
+      } else if (!_player.playing) {
+        // При старте нового воспроизведения
+        await _playCurrentTrack(seekPosition: _lastPosition);
+      }
+      _updateControls();
+    } catch (e, st) {
+      LogService.error('Ошибка в методе play()', e, st);
     }
-    _isPaused = false;
-    _updateControls();
   }
 
   @override
   Future<void> pause() async {
-    _isPaused = true;
-    await _player.pause();
-    _updateControls();
+    try {
+      _isPaused = true;
+      await _player.pause();
+      _updateControls();
+    } catch (e, st) {
+      LogService.error('Ошибка в методе pause()', e, st);
+    }
   }
 
   @override
   Future<void> stop() async {
-    _isPaused = false;
-    await _player.stop();
-    _updateControls();
+    try {
+      // Сохраняем текущую позицию перед остановкой
+      _lastPosition = _player.position;
+      LogService.log('⏹ Сохранена позиция: $_lastPosition');
+
+      await _player.stop();
+      _isPaused = false;
+      _updateControls();
+    } catch (e, st) {
+      LogService.error('Ошибка в методе stop()', e, st);
+    }
   }
 
   @override
   Future<void> seek(Duration position) async {
-    await _player.seek(position);
-    _updateControls();
+    try {
+      await _player.seek(position);
+      _updateControls();
+    } catch (e, st) {
+      LogService.error('Ошибка в методе seek()', e, st);
+    }
   }
 
   @override
   Future<void> skipToNext() async {
-    if (_playlist.isEmpty) return;
-    _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
-    debugPrint('⏭ Переход к следующему треку: $_currentTrackIndex');
-    await _playCurrentTrack();
+    try {
+      if (_playlist.isEmpty) return;
+      _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
+      LogService.log('⏭ Переход к следующему треку: $_currentTrackIndex');
+      await _playCurrentTrack();
+    } catch (e, st) {
+      LogService.error('Ошибка в методе skipToNext()', e, st);
+    }
   }
 
   @override
   Future<void> skipToPrevious() async {
-    if (_playlist.isEmpty) return;
-    _currentTrackIndex =
-        (_currentTrackIndex - 1 + _playlist.length) % _playlist.length;
-    debugPrint('⏮ Переход к предыдущему треку: $_currentTrackIndex');
-    await _playCurrentTrack();
+    try {
+      if (_playlist.isEmpty) return;
+      _currentTrackIndex =
+          (_currentTrackIndex - 1 + _playlist.length) % _playlist.length;
+      LogService.log('⏮ Переход к предыдущему треку: $_currentTrackIndex');
+      await _playCurrentTrack();
+    } catch (e, st) {
+      LogService.error('Ошибка в методе skipToPrevious()', e, st);
+    }
   }
 
   @override
   Future<void> playLocalFile(String filePath) async {
-    await _player.setFilePath(filePath);
-    _currentTrackController.add(_playlist[_currentTrackIndex]);
-    await _player.play();
-    _isPaused = false;
-    _updateControls();
+    try {
+      await _player.setFilePath(filePath);
+      _currentTrackController.add(_playlist[_currentTrackIndex]);
+      await _player.play();
+      _isPaused = false;
+      _updateControls();
+    } catch (e, st) {
+      LogService.error('Ошибка при воспроизведении локального файла', e, st);
+    }
   }
 
   @override
   void toggleLoop() {
     _isLooping = !_isLooping;
+    LogService.log('🔁 Режим повтора: $_isLooping');
+  }
+
+  @override
+  void toggleShuffle() {
+    _isShuffling = !_isShuffling;
+    if (_isShuffling) {
+      _shuffleIndices = List.generate(_playlist.length, (i) => i)..shuffle();
+      LogService.log(
+          '🔀 Режим перемешивания включен. Новый порядок: $_shuffleIndices');
+    } else {
+      LogService.log(
+          '➡️ Режим перемешивания выключен. Восстановлен обычный порядок.');
+    }
   }
 
   @override
   Future<void> close() async {
     await _currentTrackController.close();
     await _player.dispose();
-    // ignore: deprecated_member_use
     await AudioService.stop();
+    LogService.log('🛑 Аудио-сервис закрыт');
   }
 
   @override
   Future<void> onPlay() {
-    debugPrint('🟢 onPlay() вызван - кнопка PLAY в уведомлении');
+    LogService.log('🟢 onPlay() вызван - кнопка PLAY в уведомлении');
     return play();
   }
 
   @override
   Future<void> onPause() {
-    debugPrint('🟠 onPause() вызван - кнопка PAUSE в уведомлении');
+    LogService.log('🟠 onPause() вызван - кнопка PAUSE в уведомлении');
     return pause();
   }
 
   @override
   Future<void> onStop() {
-    debugPrint('🔴 onStop() вызван - кнопка STOP в уведомлении');
+    LogService.log('🔴 onStop() вызван - кнопка STOP в уведомлении');
     return stop();
   }
 
   @override
   Future<void> onSkipToNext() {
-    debugPrint('⏭ onSkipToNext() вызван - кнопка NEXT в уведомлении');
+    LogService.log('⏭ onSkipToNext() вызван - кнопка NEXT в уведомлении');
     return skipToNext();
   }
 
   @override
   Future<void> onSkipToPrevious() {
-    debugPrint('⏮ onSkipToPrevious() вызван - кнопка PREV в уведомлении');
+    LogService.log('⏮ onSkipToPrevious() вызван - кнопка PREV в уведомлении');
     return skipToPrevious();
   }
 }
