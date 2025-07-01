@@ -1,0 +1,2 @@
+D:/programm/music_app/android/app/.cxx/RelWithDebInfo/o3417351/x86/CMakeFiles/edit_cache.dir
+D:/programm/music_app/android/app/.cxx/RelWithDebInfo/o3417351/x86/CMakeFiles/rebuild_cache.dir
