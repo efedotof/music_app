@@ -1,7 +1,9 @@
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:music_app/Hive/model/track_favorite/track_favorite.dart';
+import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
 import 'package:music_app/features/music_home/widget/widget.dart';
 import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
 
@@ -47,6 +49,12 @@ class FavoriteTabScreen extends StatelessWidget {
             return TracksModel(
               tracks: track,
               listTracks: trackList,
+              currentTrackId: context
+                      .read<PlaystopMusicCubit>()
+                      .audioHandler
+                      .currentTrack
+                      ?.id ??
+                  '',
             );
           },
         );

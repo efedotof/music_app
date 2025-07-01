@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
 
 import 'package:music_app/features/music_home/widget/widget.dart';
 import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
@@ -102,7 +104,16 @@ class _DownloadTabScreenState extends State<DownloadTabScreen> {
                 itemCount: _tracks.length,
                 itemBuilder: (context, index) {
                   final track = _tracks[index];
-                  return TracksModel(tracks: track, listTracks: _tracks);
+                  return TracksModel(
+                    tracks: track,
+                    listTracks: _tracks,
+                    currentTrackId: context
+                            .read<PlaystopMusicCubit>()
+                            .audioHandler
+                            .currentTrack
+                            ?.id ??
+                        '',
+                  );
                 },
               ));
   }

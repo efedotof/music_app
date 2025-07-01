@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/features/music_home/music_cubit/playlist/playlist_cubit.dart';
+import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
 import 'package:music_app/music_repository/music_model/tracks/tracks.dart';
 
 import 'playlist_card.dart';
@@ -39,7 +40,7 @@ class GlobalScreenWidget extends StatelessWidget {
                 height: 150,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: playlists.length,
+                  itemCount: playlists.length > 10 ? 10 : playlists.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemBuilder: (_, index) => SizedBox(
                     width: 120,
@@ -58,11 +59,25 @@ class GlobalScreenWidget extends StatelessWidget {
         const SizedBox(height: 12),
         Wrap(
           children: List.generate(
-              tracks.length,
-              (index) => TracksModel(
-                    tracks: tracks[index],
-                    listTracks: tracks,
-                  )),
+            tracks.length,
+            (index) => BlocBuilder<PlaystopMusicCubit, PlaystopMusicState>(
+              builder: (context, state) {
+                final currentId = state.maybeWhen(
+                  currentTrack: (playlist, currentTrack) => currentTrack.id,
+                  orElse: () => '',
+                );
+
+                return TracksModel(
+                  tracks: tracks[index],
+                  listTracks: tracks,
+                  currentTrackId: currentId,
+                );
+              },
+            ),
+          ),
+        ),
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.2,
         )
       ],
     );

@@ -22,6 +22,7 @@ class AudioHandlerRepository extends BaseAudioHandler
   List<int> _shuffleIndices = [];
   Duration? _lastPosition;
   Completer<void>? _stopCompleter;
+  String? _lastTrackId;
 
   final _currentTrackController = StreamController<Tracks>.broadcast();
 
@@ -31,6 +32,16 @@ class AudioHandlerRepository extends BaseAudioHandler
     queue.stream.listen((queue) {
       _logQueueContent(queue);
     });
+  }
+
+  @override
+  Tracks? get currentTrack {
+    if (_playlist.isEmpty || _currentTrackIndex >= _playlist.length) {
+      return null;
+    }
+    final effectiveIndex =
+        _isShuffling ? _shuffleIndices[_currentTrackIndex] : _currentTrackIndex;
+    return effectiveIndex < _playlist.length ? _playlist[effectiveIndex] : null;
   }
 
   void _logQueueContent(List<MediaItem> queue) {
@@ -130,10 +141,19 @@ class AudioHandlerRepository extends BaseAudioHandler
     final effectiveIndex =
         _isShuffling ? _shuffleIndices[_currentTrackIndex] : _currentTrackIndex;
 
+    if (effectiveIndex >= _playlist.length) {
+      LogService.log('❌ Эффективный индекс за пределами плейлиста.');
+      return;
+    }
+
     final track = _playlist[effectiveIndex];
     LogService.log('▶️ Проигрываю трек: ${track.track} (${track.id})');
 
     try {
+      // Если это тот же трек, что и был на паузе, используем сохраненную позицию
+      final positionToSeek =
+          (track.id == _lastTrackId) ? seekPosition ?? _lastPosition : null;
+
       final meta = await _fetchTrackMeta(track.id);
       if (meta == null) {
         LogService.log('❌ Метаданные не найдены для трека: ${track.id}');
@@ -162,13 +182,15 @@ class AudioHandlerRepository extends BaseAudioHandler
       await _player.setUrl(url);
       _currentTrackController.add(track);
 
-      final positionToSeek = seekPosition ?? _lastPosition;
       if (positionToSeek != null) {
         await _player.seek(positionToSeek);
+        LogService.log('⏩ Переход к сохраненной позиции: $positionToSeek');
         _lastPosition = null;
       }
 
       await _player.play();
+      _isPaused = false;
+      _lastTrackId = track.id;
       _updateControls();
 
       LogService.log('✅ Воспроизведение начато: $url');
@@ -184,9 +206,9 @@ class AudioHandlerRepository extends BaseAudioHandler
   }
 
   @override
-  Future<void> loadPlaylist(List<Tracks> tracks) async {
+  Future<void> loadPlaylist(List<Tracks> tracks, {int startIndex = 0}) async {
     _playlist = tracks;
-    _currentTrackIndex = 0;
+    _currentTrackIndex = startIndex.clamp(0, tracks.length - 1);
     _shuffleIndices = List.generate(_playlist.length, (i) => i)..shuffle();
     await _playCurrentTrack();
   }
@@ -194,10 +216,10 @@ class AudioHandlerRepository extends BaseAudioHandler
   @override
   Future<void> play() async {
     try {
-      if (_isPaused) {
+      if (_isPaused && _player.processingState != ProcessingState.idle) {
         await _player.play();
         _isPaused = false;
-      } else if (!_player.playing) {
+      } else {
         await _playCurrentTrack(seekPosition: _lastPosition);
       }
       _updateControls();
@@ -210,6 +232,13 @@ class AudioHandlerRepository extends BaseAudioHandler
   Future<void> pause() async {
     try {
       _isPaused = true;
+      _lastPosition = _player.position;
+      _lastTrackId =
+          _playlist.isNotEmpty && _currentTrackIndex < _playlist.length
+              ? _playlist[_currentTrackIndex].id
+              : null;
+      LogService.log(
+          '⏸ Сохранена позиция: $_lastPosition для трека $_lastTrackId');
       await _player.pause();
       _updateControls();
     } catch (e, st) {
@@ -221,9 +250,13 @@ class AudioHandlerRepository extends BaseAudioHandler
   Future<void> stop() async {
     try {
       _lastPosition = _player.position;
-      LogService.log('⏹ Сохранена позиция: $_lastPosition');
+      _lastTrackId =
+          _playlist.isNotEmpty && _currentTrackIndex < _playlist.length
+              ? _playlist[_currentTrackIndex].id
+              : null;
+      LogService.log(
+          '⏹ Сохранена позиция: $_lastPosition для трека $_lastTrackId');
 
-      // Ждем полной остановки плеера
       _stopCompleter = Completer<void>();
       await _player.stop();
       await _stopCompleter?.future;

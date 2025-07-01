@@ -45,7 +45,13 @@ class PlaystopMusicCubit extends Cubit<PlaystopMusicState> {
       {required List<Tracks> playlist, required Tracks track}) async {
     try {
       _playlist = playlist;
-      await audioHandler.loadPlaylist(playlist);
+      final startIndex = playlist.indexWhere((t) => t.id == track.id);
+      if (startIndex == -1) {
+        emit(PlaystopMusicState.error(error: 'Трек не найден в плейлисте'));
+        return;
+      }
+
+      await audioHandler.loadPlaylist(playlist, startIndex: startIndex);
       final isLocal = File(track.id).existsSync();
       if (isLocal) {
         await audioHandler.playLocalFile(track.id);

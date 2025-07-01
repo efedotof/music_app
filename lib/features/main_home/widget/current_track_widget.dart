@@ -143,10 +143,8 @@ class _CurrentTrackWidgetState extends State<CurrentTrackWidget>
                                       ),
                                     ),
                                     Positioned(
-                                      left: (knobPosition - 6).clamp(
-                                          0.0,
-                                          barWidth -
-                                              12), // отступ 6 для центрирования кружка по середине
+                                      left: (knobPosition - 6)
+                                          .clamp(0.0, barWidth - 12),
                                       child: Container(
                                         width: 12,
                                         height: 12,

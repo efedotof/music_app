@@ -1,17 +1,20 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:music_app/features/music_home/music_cubit/playback/playback_cubit.dart';
 import 'package:music_app/features/music_home/music_cubit/playstop_music/playstop_music_cubit.dart';
+import 'package:music_app/features/music_home/widget/tracks_model.dart';
 import 'package:music_app/features/search/cubit/search_cubit.dart';
 import 'package:music_app/features/search/widget/widget.dart';
 
 @RoutePage()
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,40 +43,25 @@ class SearchScreen extends StatelessWidget {
                         style: const TextStyle(color: Colors.redAccent),
                       )),
                       loaded: (tracks) {
-                        return ListView.separated(
-                          itemCount: tracks.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(color: Colors.white10),
-                          itemBuilder: (context, index) {
-                            final track = tracks[index];
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: track.imageWebp,
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                    Icons.error,
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                track.track,
-                              ),
-                              subtitle: Text(
-                                track.artistName,
-                              ),
-                              onTap: () {
-                                context
-                                    .read<PlaystopMusicCubit>()
-                                    .playTrack(playlist: tracks, track: track);
-                                context.read<PlaybackCubit>().play();
+                        return BlocBuilder<PlaystopMusicCubit,
+                            PlaystopMusicState>(
+                          builder: (context, state) {
+                            return ListView.separated(
+                              itemCount: tracks.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(color: Colors.white10),
+                              itemBuilder: (context, index) {
+                                final track = tracks[index];
+                                return TracksModel(
+                                  tracks: track,
+                                  listTracks: tracks,
+                                  currentTrackId: context
+                                          .read<PlaystopMusicCubit>()
+                                          .audioHandler
+                                          .currentTrack
+                                          ?.id ??
+                                      '',
+                                );
                               },
                             );
                           },
@@ -83,6 +71,9 @@ class SearchScreen extends StatelessWidget {
                   },
                 ),
               ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.2,
+              )
             ],
           ),
         ),

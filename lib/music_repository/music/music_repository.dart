@@ -72,8 +72,15 @@ class MusicRepository implements MusicInterface {
         List<Tracks> tracksList = [];
         for (var id in trackIds) {
           if (tracksInfo.containsKey(id.toString())) {
-            var trackJson = tracksInfo[id.toString()];
+            var trackJson =
+                Map<String, dynamic>.from(tracksInfo[id.toString()]);
             trackJson['id'] = id.toString();
+            trackJson.forEach((key, value) {
+              if (value == null) {
+                trackJson[key] = '';
+              }
+            });
+
             tracksList.add(Tracks.fromJson(trackJson));
           }
         }

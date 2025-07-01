@@ -14,7 +14,7 @@ class SearchCubit extends Cubit<SearchState> {
   final MusicRepository _repository;
 
   Future<void> searchTracks(String query) async {
-    if (query.isEmpty) {
+    if (query.isEmpty || query == "") {
       emit(SearchState.initial());
       return;
     }
@@ -27,7 +27,7 @@ class SearchCubit extends Cubit<SearchState> {
         emit(const SearchState.error(error: 'Ничего не найдено, сорри'));
       }
     } catch (e) {
-      emit(SearchState.error(error: e.toString()));
+      emit(SearchState.error(error: 'Ничего не найдено, сорри'));
     }
   }
 }

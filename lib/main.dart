@@ -34,7 +34,7 @@ void main() async {
       androidResumeOnClick: true,
       androidNotificationChannelId: 'com.efedotov.channel.audio',
       androidNotificationChannelName: 'Music Playback',
-      androidNotificationOngoing: false,
+      androidNotificationOngoing: true,
       notificationColor: Colors.black,
       androidNotificationClickStartsActivity: true,
       androidStopForegroundOnPause: true,
@@ -42,6 +42,7 @@ void main() async {
       androidShowNotificationBadge: true,
     ),
   );
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
